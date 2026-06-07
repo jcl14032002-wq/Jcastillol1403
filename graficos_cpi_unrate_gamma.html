@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPI & Desempleo 2025</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #18181f;
+    --surface2: #1f1f2b;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e8f0;
+    --muted: #888899;
+    --blue: #4f8ef7;
+    --blue-dim: rgba(79,142,247,0.12);
+    --red: #f26b6b;
+    --red-dim: rgba(242,107,107,0.12);
+    --purple: #9d7ef7;
+    --purple-dim: rgba(157,126,247,0.12);
+    --accent: #4f8ef7;
+    --radius: 12px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 24px;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-size: 20px;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 0.5px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tab {
+    padding: 8px 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .chart-panel {
+    display: none;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .chart-panel.active { display: block; }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .chart-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .pill-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .pill-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+  .pill-btn.on-blue { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+  .pill-btn.on-red { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+
+  .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+  canvas { display: block; }
+
+  .chart-wrap { position: relative; width: 100%; }
+
+  .insight {
+    background: var(--surface2);
+    border-left: 2px solid var(--purple);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .insight strong { color: var(--text); font-weight: 500; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .slider-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--red); }
+  .slider-row span { font-size: 13px; font-weight: 500; font-family: 'DM Mono', monospace; color: var(--red); min-width: 44px; }
+
+  .mini-stats {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .mini-stat {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .mini-stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mini-stat-value { font-size: 15px; font-weight: 500; font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+  .hover-tip {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  @media (max-width: 600px) {
+    .metrics { grid-template-columns: repeat(2,1fr); }
+    .mini-stats { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>CPI & Desempleo — EE.UU. 2025</h1>
+<p class="subtitle">Análisis mensual de la relación entre inflación y mercado laboral · Fuente: FRED</p>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">CPI inicio</div>
+    <div class="metric-value" style="color:var(--blue)">318.96</div>
+    <div class="metric-sub">enero 2025</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">CPI fin</div>
+    <div class="metric-value" style="color:var(--blue)">326.03</div>
+    <div class="metric-sub">+2.22% acumulado</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Desempleo mín</div>
+    <div class="metric-value" style="color:var(--red)">4.0%</div>
+    <div class="metric-sub">enero 2025</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Desempleo máx</div>
+    <div class="metric-value" style="color:var(--red)">4.5%</div>
+    <div class="metric-sub">noviembre 2025</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('serie')">Serie de tiempo</button>
+  <button class="tab" onclick="showTab('phillips')">Curva de Phillips</button>
+  <button class="tab" onclick="showTab('mom')">Inflación mensual</button>
+</div>
+
+<!-- TAB 1: Serie de tiempo -->
+<div class="chart-panel active" id="tab-serie">
+  <div class="chart-header">
+    <div>
+      <div class="chart-title">Evolución mensual — CPI y Desempleo</div>
+      <div class="chart-desc">Dos ejes: índice CPI (izq.) y tasa de desempleo % (der.)</div>
+    </div>
+    <div class="controls">
+      <button class="pill-btn on-blue" id="btnCPI" onclick="toggleSerie('cpi')">
+        <span class="dot" style="background:var(--blue);"></span>CPI
+      </button>
+      <button class="pill-btn on-red" id="btnUN" onclick="toggleSerie('un')">
+        <span class="dot" style="background:var(--red);border:1px dashed var(--red);"></span>Desempleo
+      </button>
+    </div>
+  </div>
+  <p class="hover-tip" id="tipSerie">Pasa el cursor sobre el gráfico para ver valores</p>
+  <div class="chart-wrap" style="height:260px"><canvas id="cSerie"></canvas></div>
+  <div class="insight"><strong>Correlación positiva (r = 0.84):</strong> Ambas variables subieron simultáneamente en 2025 — un patrón atípico que contradice la Curva de Phillips clásica, señal de presiones de oferta persistentes.</div>
+</div>
+
+<!-- TAB 2: Curva de Phillips -->
+<div class="chart-panel" id="tab-phillips">
+  <div class="chart-header">
+    <div>
+      <div class="chart-title">Curva de Phillips 2025</div>
+      <div class="chart-desc">Desempleo (eje X) vs CPI (eje Y) — cada punto es un mes</div>
+    </div>
+    <div class="controls">
+      <button class="pill-btn" id="btnEtiq" onclick="toggleEtiquetas()">
+        ◈ Etiquetas
+      </button>
+    </div>
+  </div>
+  <p class="hover-tip" id="tipPhillips">Pasa el cursor sobre un punto</p>
+  <div class="chart-wrap" style="height:280px"><canvas id="cPhillips"></canvas></div>
+  <div class="insight"><strong>Pendiente positiva:</strong> La teoría predice relación inversa. En 2025 la pendiente es positiva — cuando el desempleo subió, la inflación también lo hizo. Esto es consistente con <strong>stagflación leve</strong> o shocks de oferta.</div>
+</div>
+
+<!-- TAB 3: Inflación MoM -->
+<div class="chart-panel" id="tab-mom">
+  <div class="chart-header">
+    <div>
+      <div class="chart-title">Variación mensual del CPI (%)</div>
+      <div class="chart-desc">Momentum inflacionario mes a mes</div>
+    </div>
+  </div>
+  <div class="slider-row">
+    <label>Umbral de alerta:</label>
+    <input type="range" min="0.05" max="0.40" step="0.01" value="0.25" id="sliderThresh" oninput="updateThresh(this.value)">
+    <span id="threshVal">0.25%</span>
+  </div>
+  <div class="chart-wrap" style="height:240px"><canvas id="cMom"></canvas></div>
+  <div class="mini-stats">
+    <div class="mini-stat">
+      <div class="mini-stat-label">Mes máximo</div>
+      <div class="mini-stat-value" style="color:var(--red)">Ago 0.348%</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-label">Promedio MoM</div>
+      <div class="mini-stat-value">0.222%</div>
+    </div>
+    <div class="mini-stat">
+      <div class="mini-stat-label">Sobre umbral</div>
+      <div class="mini-stat-value" id="sobreUmbral">5 / 9</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Nov','Dic'];
+const CPI = [318.961,319.679,319.785,320.302,320.620,321.435,322.169,323.291,324.245,325.063,326.031];
+const UN  = [4.0,4.2,4.2,4.2,4.3,4.1,4.3,4.3,4.4,4.5,4.4];
+const MOM_L = ['Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Dic'];
+const MOM = [0.2251,0.0332,0.1617,0.0993,0.2542,0.2284,0.3483,0.2951,0.2978];
+
+const gc = 'rgba(255,255,255,0.06)';
+const tc = '#888899';
+
+function showTab(id){
+  document.querySelectorAll('.chart-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+/* ---- SERIE ---- */
+const serieVis = {cpi:true,un:true};
+const chartSerie = new Chart(document.getElementById('cSerie'),{
+  data:{labels:M,datasets:[
+    {type:'line',label:'CPI',data:CPI,borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,0.08)',fill:true,tension:0.35,pointRadius:4,pointHoverRadius:6,yAxisID:'y'},
+    {type:'line',label:'Desempleo',data:UN,borderColor:'#f26b6b',fill:false,tension:0.35,pointRadius:4,pointHoverRadius:6,yAxisID:'y1',borderDash:[5,3]}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.datasetIndex===0?`CPI: ${c.parsed.y.toFixed(2)}`:`Desempleo: ${c.parsed.y.toFixed(1)}%`}}},
+    onHover:(_,els)=>{if(els.length){const i=els[0].index;document.getElementById('tipSerie').textContent=`${M[i]}: CPI ${CPI[i].toFixed(2)} | Desempleo ${UN[i].toFixed(1)}%`;}},
+    scales:{
+      x:{ticks:{color:tc,font:{size:11},autoSkip:false,maxRotation:0},grid:{color:gc}},
+      y:{ticks:{color:tc,font:{size:11},callback:v=>v.toFixed(0)},grid:{color:gc},min:317,max:328,title:{display:true,text:'CPI',color:tc,font:{size:11}}},
+      y1:{position:'right',ticks:{color:tc,font:{size:11},callback:v=>v.toFixed(1)+'%'},grid:{drawOnChartArea:false},min:3.6,max:4.8,title:{display:true,text:'Desempleo %',color:tc,font:{size:11}}}
+    }
+  }
+});
+
+function toggleSerie(k){
+  const idx=k==='cpi'?0:1; const btn=document.getElementById(k==='cpi'?'btnCPI':'btnUN'); const cls=k==='cpi'?'on-blue':'on-red';
+  serieVis[k]=!serieVis[k]; chartSerie.data.datasets[idx].hidden=!serieVis[k];
+  btn.classList.toggle(cls,serieVis[k]); chartSerie.update();
+}
+
+/* ---- PHILLIPS ---- */
+const pts = CPI.map((c,i)=>({x:UN[i],y:c,m:M[i]}));
+const trendPts=(()=>{
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),n=xs.length;
+  const sx=xs.reduce((a,b)=>a+b,0),sy=ys.reduce((a,b)=>a+b,0);
+  const sxy=xs.reduce((a,b,i2)=>a+b*ys[i2],0),sxx=xs.reduce((a,b)=>a+b*b,0);
+  const m2=(n*sxy-sx*sy)/(n*sxx-sx*sx),c2=(sy-m2*sx)/n;
+  const mn=Math.min(...xs)-0.08,mx=Math.max(...xs)+0.08;
+  return [{x:mn,y:m2*mn+c2},{x:mx,y:m2*mx+c2}];
+})();
+
+let showEtiq=false;
+const labelPlugin={id:'lp',afterDatasetsDraw(ch){
+  if(!showEtiq)return;
+  const ctx2=ch.ctx;
+  ch.data.datasets[0].data.forEach((p,i)=>{
+    const{x,y}=ch.getDatasetMeta(0).data[i];
+    ctx2.save();ctx2.font='500 11px DM Sans,sans-serif';ctx2.fillStyle='#aaa';
+    ctx2.fillText(p.m,x+8,y-5);ctx2.restore();
+  });
+}};
+
+const grad=CPI.map((_,i)=>{const t=i/(CPI.length-1);const r=Math.round(79+t*(242-79)),g=Math.round(142+t*(107-142)),b=Math.round(247+t*(107-247));return `rgba(${r},${g},${b},0.9)`;});
+
+const chartP=new Chart(document.getElementById('cPhillips'),{
+  data:{datasets:[
+    {type:'scatter',label:'Mes',data:pts,backgroundColor:grad,pointRadius:7,pointHoverRadius:9},
+    {type:'line',label:'Tendencia',data:trendPts,borderColor:'rgba(157,126,247,0.45)',borderDash:[5,4],pointRadius:0,fill:false}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{filter:i=>i.datasetIndex===0,callbacks:{label:c=>`${c.raw.m}: Desempleo ${c.parsed.x.toFixed(1)}% | CPI ${c.parsed.y.toFixed(2)}`}}},
+    onHover:(_,els)=>{if(els.length&&els[0].datasetIndex===0){const p=pts[els[0].index];document.getElementById('tipPhillips').textContent=`${p.m} — Desempleo: ${p.x.toFixed(1)}% | CPI: ${p.y.toFixed(2)}`;}},
+    scales:{
+      x:{title:{display:true,text:'Tasa de desempleo (%)',color:tc,font:{size:11}},ticks:{color:tc,font:{size:11},callback:v=>v.toFixed(1)+'%'},grid:{color:gc},min:3.8,max:4.7},
+      y:{title:{display:true,text:'CPI (índice)',color:tc,font:{size:11}},ticks:{color:tc,font:{size:11}},grid:{color:gc},min:317.5,max:327}
+    }
+  },plugins:[labelPlugin]
+});
+
+function toggleEtiquetas(){
+  showEtiq=!showEtiq;
+  document.getElementById('btnEtiq').style.color=showEtiq?'var(--purple)':'';
+  document.getElementById('btnEtiq').style.borderColor=showEtiq?'var(--purple)':'';
+  chartP.update();
+}
+
+/* ---- MOM ---- */
+let thresh=0.25;
+function momColors(t){return MOM.map(v=>v>=t?'rgba(242,107,107,0.82)':'rgba(79,142,247,0.65)');}
+
+const chartM=new Chart(document.getElementById('cMom'),{
+  type:'bar',
+  data:{labels:MOM_L,datasets:[{label:'MoM %',data:MOM,backgroundColor:momColors(0.25),borderRadius:5}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`MoM: ${c.parsed.y.toFixed(3)}%`}}},
+    scales:{
+      x:{ticks:{color:tc,font:{size:12},autoSkip:false},grid:{color:gc}},
+      y:{ticks:{color:tc,font:{size:11},callback:v=>v.toFixed(2)+'%'},grid:{color:gc},min:0,max:0.42,title:{display:true,text:'Var. mensual (%)',color:tc,font:{size:11}}}
+    }
+  },
+  plugins:[{id:'tline',afterDraw(ch){
+    const{ctx:c2,scales:{y,x}}=ch; const yPx=y.getPixelForValue(thresh);
+    c2.save();c2.beginPath();c2.moveTo(x.left,yPx);c2.lineTo(x.right,yPx);
+    c2.strokeStyle='rgba(242,107,107,0.55)';c2.lineWidth=1.5;c2.setLineDash([5,4]);c2.stroke();
+    c2.font='11px DM Mono,monospace';c2.fillStyle='#f26b6b';
+    c2.fillText(`Umbral ${thresh.toFixed(2)}%`,x.right-105,yPx-5);c2.restore();
+  }}]
+});
+
+function updateThresh(v){
+  thresh=parseFloat(v);
+  document.getElementById('threshVal').textContent=thresh.toFixed(2)+'%';
+  chartM.data.datasets[0].backgroundColor=momColors(thresh);
+  document.getElementById('sobreUmbral').textContent=MOM.filter(x=>x>=thresh).length+' / 9';
+  chartM.update('none');
+}
+</script>
+</body>
+</html>
